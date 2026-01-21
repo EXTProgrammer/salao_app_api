@@ -37,12 +37,13 @@ public class Usuario {
     //Métodos
     public Usuario(){}
 
-    public Usuario(String nome, String email, String telefone, String senha, String role){
+    public Usuario(String nome, String email, String telefone, String senha, String role, boolean ativo){
         this.nome = nome;
         this.email = email;
         this.telefone = telefone;
         this.senha = senha;
         this.role = role;
+        this.ativo = ativo;
     }
 
     //Métodos Especiais
