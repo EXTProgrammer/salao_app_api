@@ -7,6 +7,8 @@ public class LoginResponseDTO {
     private String role;
 
     //Métodos
+    public LoginResponseDTO(){}
+
     public LoginResponseDTO(String token, Long usuarioId, String nome, String role){
         this.token = token;
         this.usuarioId = usuarioId;

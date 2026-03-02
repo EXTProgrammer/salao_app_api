@@ -1,9 +1,13 @@
 package br.com.salao.api.services;
 import br.com.salao.api.dto.AdminCreateUserDTO;
+import br.com.salao.api.dto.RegisterRequestDTO;
 import br.com.salao.api.models.Usuario;
 import br.com.salao.api.repositories.UsuarioRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -11,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,43 +34,65 @@ public class UsuarioServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @Test
-    void criptografarSenhaEDefinirRole(){
-        Usuario usuarioEntrada = new Usuario();
-        usuarioEntrada.setNome("Maria");
-        usuarioEntrada.setEmail("maria@gmail.com");
-        usuarioEntrada.setSenha("12121212");
+    private RegisterRequestDTO registerRequestDTO;
+    private Usuario usuarioMock;
 
-        when(passwordEncoder.encode(usuarioEntrada.getSenha())).thenReturn("$2a$10$HASH_CRIPTOGRAFADO");
+    @BeforeEach
+    void setUp(){
+       registerRequestDTO = new RegisterRequestDTO();
+       registerRequestDTO.setNome("Fulano Silva");
+       registerRequestDTO.setEmail("fulano.teste@gmail.com");
+       registerRequestDTO.setTelefone("5099999999999");
+       registerRequestDTO.setSenha("teste1234");
 
-        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> {
-            Usuario u = i.getArgument(0);
-            u.setId(50L);
-            return u;
-        });
-
-        Usuario resultado = usuarioService.registrar(usuarioEntrada);
-
-        assertEquals("$2a$10$HASH_CRIPTOGRAFADO", resultado.getSenha());
-        assertEquals("ROLE_CLIENTE", resultado.getRole());
-        verify(usuarioRepository).save(any(Usuario.class));
+       usuarioMock = new Usuario();
+       usuarioMock.setId(1L);
+       usuarioMock.setNome("Fulano Silva");
+       usuarioMock.setEmail("fulano.teste@gmail.com");
+       usuarioMock.setTelefone("5099999999999");
+       usuarioMock.setSenha("senhaCriptografada");
+       usuarioMock.setRole("ROLE_CLIENTE");
     }
 
     @Test
-    void criarClientePorAdminSemEmail(){
-        AdminCreateUserDTO dto = new AdminCreateUserDTO();
-        dto.setNome("Cliente Telefone");
-        dto.setTelefone("11999998888");
-        dto.setEmail(null);
+    @DisplayName("Deve registrar um novo usuário com sucesso a partir do DTO")
+    void registrarUsuarioComSucesso(){
+        when(usuarioRepository.findByEmail(registerRequestDTO.getEmail())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(registerRequestDTO.getSenha())).thenReturn("senhaCriptografada");
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioMock);
 
-        when(usuarioRepository.findByTelefone(dto.getTelefone())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(anyString())).thenReturn("HASH_SENHA_ALEATORIA");
-        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
-
-        Usuario resultado = usuarioService.AdminCriaCliente(dto);
-
-        assertEquals("11999998888@email.salao", resultado.getEmail());
+        Usuario resultado = usuarioService.registrar(registerRequestDTO);
+        assertNotNull(resultado);
+        assertEquals(1L, resultado.getId());
+        assertEquals("Fulano Silva", resultado.getNome());
         assertEquals("ROLE_CLIENTE", resultado.getRole());
-        verify(usuarioRepository).save(any(Usuario.class));
+
+        ArgumentCaptor<Usuario> usuarioCaptor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(usuarioCaptor.capture());
+
+        Usuario usuarioCapturado = usuarioCaptor.getValue();
+
+        assertEquals("Fulano Silva", usuarioCapturado.getNome());
+        assertEquals("fulano.teste@gmail.com", usuarioCapturado.getEmail());
+        assertEquals("5099999999999", usuarioCapturado.getTelefone());
+        assertEquals("senhaCriptografada", usuarioCapturado.getSenha());
+        assertEquals("ROLE_CLIENTE", usuarioCapturado.getRole());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao tentar registrar um e-mail já existente")
+    void lancarExceptionQuandoEmailExiste(){
+        Usuario usuarioExistente = new Usuario();
+        usuarioExistente.setEmail(registerRequestDTO.getEmail());
+
+        when(usuarioRepository.findByEmail(registerRequestDTO.getEmail())).thenReturn(Optional.of(usuarioExistente));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+           usuarioService.registrar(registerRequestDTO);
+        });
+
+        assertEquals("Este email já está cadastrado.", exception.getMessage());
+
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 }

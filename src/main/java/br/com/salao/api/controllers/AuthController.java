@@ -1,8 +1,5 @@
 package br.com.salao.api.controllers;
-import br.com.salao.api.dto.ForgotPasswordDTO;
-import br.com.salao.api.dto.LoginRequestDTO;
-import br.com.salao.api.dto.LoginResponseDTO;
-import br.com.salao.api.dto.ResetPasswordDTO;
+import br.com.salao.api.dto.*;
 import br.com.salao.api.models.Usuario;
 import br.com.salao.api.repositories.UsuarioRepository;
 import br.com.salao.api.security.JwtTokenProvider;
@@ -30,6 +27,7 @@ public class AuthController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
     @Autowired
     private UsuarioService usuarioService;
 

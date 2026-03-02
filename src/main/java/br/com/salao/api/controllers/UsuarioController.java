@@ -1,10 +1,13 @@
 package br.com.salao.api.controllers;
 import br.com.salao.api.dto.AdminCreateUserDTO;
+import br.com.salao.api.dto.RegisterRequestDTO;
+import br.com.salao.api.dto.RegisterResponseDTO;
 import br.com.salao.api.models.Usuario;
 import br.com.salao.api.repositories.UsuarioRepository;
 import br.com.salao.api.services.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +24,18 @@ public class UsuarioController {
     private UsuarioRepository usuarioRepository;
 
     @PostMapping("/registrar")
-    public ResponseEntity<Usuario> criarRegistro(@Valid @RequestBody Usuario usuario){
-        Usuario newUser = usuarioService.registrar(usuario);
-        newUser.setSenha(null);
+    public ResponseEntity<RegisterResponseDTO> registrar(@RequestBody RegisterRequestDTO registerDto){
+        Usuario usuario = usuarioService.registrar(registerDto);
 
-        return ResponseEntity.ok(newUser);
+        RegisterResponseDTO response = new RegisterResponseDTO(
+                usuario.getId(),
+                usuario.getNome(),
+                usuario.getEmail(),
+                usuario.getTelefone(),
+                usuario.getRole()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/admin/criar-cliente")

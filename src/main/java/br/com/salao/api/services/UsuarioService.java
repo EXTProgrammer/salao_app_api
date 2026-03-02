@@ -1,5 +1,6 @@
 package br.com.salao.api.services;
 import br.com.salao.api.dto.AdminCreateUserDTO;
+import br.com.salao.api.dto.RegisterRequestDTO;
 import br.com.salao.api.models.Usuario;
 import br.com.salao.api.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +27,16 @@ public class UsuarioService {
     //Métodos
 
     @Transactional
-    public Usuario registrar(Usuario usuario){
-        String rawPass = usuario.getSenha();
-        String newPass = passwordEncoder.encode(rawPass);
+    public Usuario registrar(RegisterRequestDTO dto){
+        if (usuarioRepository.findByEmail(dto.getEmail()).isPresent())
+            throw new RuntimeException("Este email já está cadastrado.");
 
-        usuario.setSenha(newPass);
+        Usuario usuario = new Usuario();
+        usuario.setNome(dto.getNome());
+        usuario.setEmail(dto.getEmail());
+        usuario.setTelefone(dto.getTelefone());
         usuario.setRole("ROLE_CLIENTE");
+        usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
 
         return usuarioRepository.save(usuario);
     }
