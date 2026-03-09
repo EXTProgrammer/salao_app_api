@@ -1,6 +1,8 @@
 package br.com.salao.api.config;
+import br.com.salao.api.models.Profissional;
 import br.com.salao.api.models.Servico;
 import br.com.salao.api.models.Usuario;
+import br.com.salao.api.repositories.ProfissionalRepository;
 import br.com.salao.api.repositories.ServicoRepository;
 import br.com.salao.api.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +13,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 @Configuration
 @Profile("dev")
@@ -26,6 +30,8 @@ public class DataInitializer implements CommandLineRunner {
 
     @Value("${app.admin.initial-password:ADMIN_PASS}")
     private String adminPassword;
+    @Autowired
+    private ProfissionalRepository profissionalRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -60,6 +66,22 @@ public class DataInitializer implements CommandLineRunner {
 
             servicoRepository.save(s1);
             System.out.println(">>> Serviço inicial criado.");
+        }
+
+        if(usuarioRepository.findByEmail("zohan@salao.com").isEmpty()){
+            Usuario prof = new Usuario();
+            prof.setNome("Zohan, o Agente Bom de Corte");
+            prof.setEmail("zohan@salao.com");
+            prof.setSenha("Zohan123");
+            prof.setRole("ROLE_PROFISSIONAL");
+            prof.setTelefone("4977777777777");
+            prof = usuarioRepository.save(prof);
+
+            Profissional profissional = new Profissional();
+            profissional.setUsuario(prof);
+            profissional.setEspecialidades(Arrays.asList("Corte Feminino", "Coloração", "Penteados"));
+            profissionalRepository.save(profissional);
+            System.out.println(">>> Profissional de teste criado com sucesso!");
         }
     }
 }
