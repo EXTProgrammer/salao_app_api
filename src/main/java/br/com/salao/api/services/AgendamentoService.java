@@ -98,4 +98,30 @@ public class AgendamentoService {
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
         return agendamentoRepository.findByClienteIdOrderByDataInicioAsc(loggedUser.getId());
     }
+
+    @Transactional
+    public void cancelarAgendamento(Long id, String loggedEmail){
+        Agendamento agendamento = agendamentoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
+
+        Usuario loggedUser = usuarioRepository.findByEmail(loggedEmail)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        boolean isCliente = agendamento.getCliente().getId().equals(loggedUser.getId());
+        boolean isAdmin = "ROLE_ADMIN".equals(loggedUser.getRole());
+
+        boolean isProfissional = "ROLE_PROFESSIONAL".equals(loggedUser.getRole()) &&
+                agendamento.getProfissional().getUsuario().getId().equals(loggedUser.getId());
+
+        if (!isCliente && !isAdmin && !isProfissional)
+            throw new RuntimeException("Você não tem permissão para cancelar este agendamento.");
+
+        if ("CANCELADO".equals(agendamento.getStatus()))
+            throw new RuntimeException("Este agendamento já está cancelado.");
+
+        agendamento.setStatus("CANCELADO");
+        agendamentoRepository.save(agendamento);
+    }
+
+
 }

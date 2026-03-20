@@ -49,4 +49,10 @@ public class AgendamentoController {
 
         return ResponseEntity.ok(listaPro);
     }
+
+    @PutMapping("/{id}/cancelar")
+    public ResponseEntity<Void> cancelar(@PathVariable Long id, Authentication auth){
+        agendamentoService.cancelarAgendamento(id, auth.getName());
+        return ResponseEntity.ok().build();
+    }
 }
