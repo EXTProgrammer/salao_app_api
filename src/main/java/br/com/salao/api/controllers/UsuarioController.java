@@ -55,4 +55,14 @@ public class UsuarioController {
 
         return ResponseEntity.ok(resultados);
     }
+
+    @GetMapping("/buscar-por-email")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Usuario> buscarPorEmail(@RequestParam String email){
+        Usuario resultado = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Nenhum usuário encontrado com este e-mail."));
+
+        resultado.setSenha(null);
+        return ResponseEntity.ok(resultado);
+    }
 }

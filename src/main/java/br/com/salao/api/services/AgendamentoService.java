@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AgendamentoService {
@@ -44,13 +46,39 @@ public class AgendamentoService {
         Usuario userPr = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
 
-        Profissional Prof = profissionalRepository.findByUsuarioId(userPr.getId())
-                .orElseThrow(() -> new RuntimeException("O usuário não está cadastrado como um profissional."));
-
         LocalDateTime inicioDia = data.atStartOfDay();
         LocalDateTime fimDia = data.atTime(LocalTime.MAX);
 
-        return agendamentoRepository.findByProfissionalIdAndDataInicioBetweenOrderByDataInicioAsc(Prof.getId(), inicioDia, fimDia);
+        if ("ROLE_ADMIN".equals(userPr.getRole()))
+            return agendamentoRepository.findByDataInicioBetweenOrderByDataInicioAsc(inicioDia, fimDia);
+
+        Optional<Profissional> profissional = profissionalRepository.findByUsuarioId(userPr.getId());
+        if (profissional.isEmpty())
+            return new ArrayList<>();
+
+        return agendamentoRepository.findByProfissionalIdAndDataInicioBetweenOrderByDataInicioAsc(profissional.get().getId(), inicioDia, fimDia);
+    }
+
+    @Transactional
+    public void alterarStatus(Long id, String newStatus, String loggedEmail){
+        Agendamento agendamento = agendamentoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
+
+        Usuario loggedUser = usuarioRepository.findByEmail(loggedEmail)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        boolean isAdmin = "ROLE_ADMIN".equals(loggedUser.getRole());
+        boolean isProfissional = "ROLE_PROFESSIONAL".equals(loggedUser.getRole()) &&
+                agendamento.getProfissional().getUsuario().getId().equals(loggedUser.getId());
+
+        if (!isAdmin && !isProfissional)
+            throw new RuntimeException("Você não tem permissão para alterar o status de agendamento.");
+
+        if ("CANCELADO".equalsIgnoreCase(agendamento.getStatus()))
+            throw new RuntimeException("Não é possível alterar um atendimento cancelado.");
+
+        agendamento.setStatus(newStatus);
+        agendamentoRepository.save(agendamento);
     }
 
     @Transactional
@@ -116,8 +144,12 @@ public class AgendamentoService {
         if (!isCliente && !isAdmin && !isProfissional)
             throw new RuntimeException("Você não tem permissão para cancelar este agendamento.");
 
-        if ("CANCELADO".equals(agendamento.getStatus()))
-            throw new RuntimeException("Este agendamento já está cancelado.");
+        if ("CONFIRMADO".equalsIgnoreCase(agendamento.getStatus()))
+            throw new RuntimeException("Este horário já foi confirmado pelo salão. " +
+                    "Por favor, entre em contato via telefone/WhatsApp para cancelar.");
+
+        if ("CANCELADO".equalsIgnoreCase(agendamento.getStatus()) || "CONCLUIDO".equalsIgnoreCase(agendamento.getStatus()))
+            throw new RuntimeException("Este agendamento já foi encerrado.");
 
         agendamento.setStatus("CANCELADO");
         agendamentoRepository.save(agendamento);

@@ -39,4 +39,11 @@ public class ProfissionalController {
                 .orElse(ResponseEntity.notFound().build());
 
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Void> deletar(@PathVariable Long id){
+        profissionalService.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
 }

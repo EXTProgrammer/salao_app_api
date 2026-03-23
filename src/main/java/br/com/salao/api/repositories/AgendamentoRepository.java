@@ -9,8 +9,8 @@ import java.util.List;
 
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>{
     List<Agendamento> findByClienteIdOrderByDataInicioAsc(Long clienteId);
-    List<Agendamento> findByProfissionalIdOrderByDataInicioAsc(Long profissionalId);
     List<Agendamento> findByProfissionalIdAndDataInicioBetweenOrderByDataInicioAsc(Long profissionalId, LocalDateTime inicioDia, LocalDateTime fimDia);
+    List<Agendamento> findByDataInicioBetweenOrderByDataInicioAsc(LocalDateTime inicio, LocalDateTime fim);
 
     @Query("SELECT COUNT(a) > 0 FROM Agendamento a " +
            "WHERE a.profissional.id = :profissionalId " +
