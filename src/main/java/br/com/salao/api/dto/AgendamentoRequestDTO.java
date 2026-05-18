@@ -3,8 +3,6 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 public class AgendamentoRequestDTO {
-
-    @NotNull(message = "Você deve informar o cliente.")
     private Long clienteId;
 
     @NotNull(message = "Você deve informar o profissional.")
@@ -15,6 +13,10 @@ public class AgendamentoRequestDTO {
 
     @NotNull(message = "A data e hora de início são obrigatórias.")
     private LocalDateTime dataInicio;
+
+    private String nomeClienteAvulso;
+
+    private String telefoneClienteAvulso;
 
     //Métodos
     public AgendamentoRequestDTO(){}
@@ -50,5 +52,21 @@ public class AgendamentoRequestDTO {
 
     public LocalDateTime getDataInicio(){
         return this.dataInicio;
+    }
+
+    public void setNomeClienteAvulso(String clienteAvulso){
+        this.nomeClienteAvulso = clienteAvulso;
+    }
+
+    public String getNomeClienteAvulso(){
+        return this.nomeClienteAvulso;
+    }
+
+    public void setTelefoneClienteAvulso(String telefoneAvulso){
+        this.telefoneClienteAvulso = telefoneAvulso;
+    }
+
+    public String getTelefoneClienteAvulso(){
+        return this.telefoneClienteAvulso;
     }
 }

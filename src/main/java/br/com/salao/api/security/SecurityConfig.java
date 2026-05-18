@@ -33,8 +33,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/usuarios/registrar").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/servicos").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/profissionais").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/esqueci-senha").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/redefinir-senha").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

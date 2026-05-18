@@ -1,6 +1,7 @@
 package br.com.salao.api.controllers;
 import br.com.salao.api.dto.AgendamentoRequestDTO;
 import br.com.salao.api.models.Agendamento;
+import br.com.salao.api.repositories.AgendamentoRepository;
 import br.com.salao.api.services.AgendamentoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,8 @@ import java.util.List;
 public class AgendamentoController {
     @Autowired
     private AgendamentoService agendamentoService;
+    @Autowired
+    private AgendamentoRepository agendamentoRepository;
 
     @PostMapping
     public ResponseEntity<Agendamento> criarAgendamento(@Valid @RequestBody AgendamentoRequestDTO dto, Authentication authentication){
@@ -68,8 +71,33 @@ public class AgendamentoController {
     }
 
     @PutMapping("/{id}/cancelar")
-    public ResponseEntity<Void> cancelar(@PathVariable Long id, Authentication auth){
-        agendamentoService.cancelarAgendamento(id, auth.getName());
+    @PreAuthorize("hasAnyRole('ROLE_PROFESSIONAL', 'ROLE_ADMIN')")
+    public ResponseEntity<Void> cancelarSalao(@PathVariable Long id, Authentication auth){
+        agendamentoService.alterarStatus(id, "CANCELADO", auth.getName());
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/{id}/cliente-cancelar")
+    public ResponseEntity<Void> cancelarCliente(@PathVariable Long id, Authentication auth){
+        agendamentoService.cancelarAgendamentoCliente(id, auth.getName());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/horarios-disponiveis")
+    @PreAuthorize("hasAnyRole('ROLE_CLIENTE', 'ROLE_PROFESSIONAL', 'ROLE_ADMIN')")
+    public ResponseEntity<List<String>> getHorarioDisponivel(@RequestParam LocalDate data, @RequestParam Long profissionalId,
+                                                             @RequestParam Integer duracao){
+        List<String> horarios = agendamentoService.consultarHorarios(data, profissionalId, duracao);
+        return ResponseEntity.ok(horarios);
+    }
+
+    @GetMapping("/todos")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_PROFESSIONAL')")
+    public ResponseEntity<List<Agendamento>> buscarTodosAgendamentos(Authentication authentication){
+        String loggedMail = authentication.getName();
+
+        List<Agendamento> todosAgendamentos = agendamentoService.buscarTodosAgendamentos(loggedMail);
+        return ResponseEntity.ok(todosAgendamentos);
+    }
+
 }

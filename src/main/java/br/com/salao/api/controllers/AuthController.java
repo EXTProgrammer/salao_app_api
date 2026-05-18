@@ -11,10 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -45,15 +42,15 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordDTO dto){
+    @PostMapping("/esqueci-senha")
+    public ResponseEntity<Void> esqueciSenha(@Valid @RequestBody ForgotPasswordDTO dto){
         usuarioService.solicitarRecupSenha(dto.getEmail());
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordDTO dto){
-        usuarioService.redefinirSenha(dto.getToken(), dto.getNewPass());
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<Void> redefinirSenha(@Valid @RequestBody ResetPasswordDTO dto){
+        usuarioService.redefinirSenha(dto.getEmail(), dto.getToken(), dto.getNewPass());
         return ResponseEntity.ok().build();
     }
 }

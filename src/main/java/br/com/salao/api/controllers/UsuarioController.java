@@ -1,5 +1,6 @@
 package br.com.salao.api.controllers;
 import br.com.salao.api.dto.AdminCreateUserDTO;
+import br.com.salao.api.dto.ProfileUpdateDTO;
 import br.com.salao.api.dto.RegisterRequestDTO;
 import br.com.salao.api.dto.RegisterResponseDTO;
 import br.com.salao.api.models.Usuario;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -64,5 +66,18 @@ public class UsuarioController {
 
         resultado.setSenha(null);
         return ResponseEntity.ok(resultado);
+    }
+
+    @PutMapping("/perfil")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Usuario> atualizacaoPerfil(@Valid @RequestBody ProfileUpdateDTO dto, Authentication authentication){
+        String loggedMail = authentication.getName();
+
+        Usuario usuario = usuarioRepository.findByEmail(loggedMail)
+                .orElseThrow(() -> new RuntimeException("Sessão Inválida."));
+
+        Usuario atualizado = usuarioService.atualizarPerfil(dto, usuario.getId());
+        atualizado.setSenha(null);
+        return ResponseEntity.ok(atualizado);
     }
 }

@@ -1,5 +1,6 @@
 package br.com.salao.api.services;
 import br.com.salao.api.dto.AdminCreateUserDTO;
+import br.com.salao.api.dto.ProfileUpdateDTO;
 import br.com.salao.api.dto.RegisterRequestDTO;
 import br.com.salao.api.models.Usuario;
 import br.com.salao.api.repositories.UsuarioRepository;
@@ -80,7 +81,7 @@ public class UsuarioService {
     @Transactional
     public void solicitarRecupSenha(String email){
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(()-> new RuntimeException("E-mail não encontrado."));
+                .orElseThrow(()-> new RuntimeException("Se este e-mail for válido, você receberá um código."));
 
         String codigo = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
         usuario.setResetToken(codigo);
@@ -91,16 +92,33 @@ public class UsuarioService {
     }
 
     @Transactional
-    public void redefinirSenha(String token, String novaSenha){
-        Usuario userToken = usuarioRepository.findByResetToken(token)
-                .orElseThrow(()-> new RuntimeException("Token inválido."));
-        if (userToken.getResetTokenExpiryDate().isBefore(LocalDateTime.now()))
-            throw new RuntimeException("Token expirado.");
+    public void redefinirSenha(String email, String token, String novaSenha){
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(()-> new RuntimeException("Usuário não encontrado."));
 
-        userToken.setSenha(passwordEncoder.encode(novaSenha));
+        if (usuario.getResetToken() == null || !usuario.getResetToken().equals(token))
+            throw new RuntimeException("Código inválido.");
 
-        userToken.setResetToken(null);
-        userToken.setResetTokenExpiryDate(null);
-        usuarioRepository.save(userToken);
+        if (usuario.getResetTokenExpiryDate() != null && usuario.getResetTokenExpiryDate().isBefore(LocalDateTime.now()))
+            throw new RuntimeException("Este código expirou. Por favor solicite um novo.");
+
+        if (usuario.getResetTokenExpiryDate() != null && usuario.getResetTokenExpiryDate().isAfter(LocalDateTime.now().plusMinutes(14)))
+            throw new RuntimeException("Por favor, aguarde cerca de 1 minuto antes de solicitar um novo código.");
+
+        usuario.setSenha(passwordEncoder.encode(novaSenha));
+        usuario.setResetToken(null);
+        usuario.setResetTokenExpiryDate(null);
+
+        usuarioRepository.save(usuario);
+    }
+
+    public Usuario atualizarPerfil(ProfileUpdateDTO dto, Long id){
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        usuario.setNome(dto.getNome());
+        usuario.setTelefone(dto.getTelefone());
+
+       return usuarioRepository.save(usuario);
     }
 }

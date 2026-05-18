@@ -22,7 +22,7 @@ public class Agendamento {
     private Long version;
 
     @ManyToOne
-    @JoinColumn(name = "cliente_id", nullable = false)
+    @JoinColumn(name = "cliente_id", nullable = true)
     private Usuario cliente;
 
     @ManyToOne
@@ -32,6 +32,12 @@ public class Agendamento {
     @ManyToOne
     @JoinColumn(name = "servico_id", nullable = false)
     private Servico servico;
+
+    @Column(name = "nome_cliente_avulso")
+    private String nomeClienteAvulso;
+
+    @Column(name = "telefone_cliente_avulso")
+    private String telefoneClienteAvulso;
 
     //Métodos
     public Agendamento(){}
@@ -106,5 +112,21 @@ public class Agendamento {
 
     public Long getVersion(){
         return this.version;
+    }
+
+    public void setNomeClienteAvulso(String clienteAvulso){
+        this.nomeClienteAvulso = clienteAvulso;
+    }
+
+    public String getNomeClienteAvulso(){
+        return this.nomeClienteAvulso;
+    }
+
+    public void setTelefoneClienteAvulso(String telefoneAvulso){
+        this.telefoneClienteAvulso = telefoneAvulso;
+    }
+
+    public String getTelefoneClienteAvulso(){
+        return this.telefoneClienteAvulso;
     }
 }

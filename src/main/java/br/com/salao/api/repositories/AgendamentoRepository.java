@@ -11,6 +11,8 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>{
     List<Agendamento> findByClienteIdOrderByDataInicioAsc(Long clienteId);
     List<Agendamento> findByProfissionalIdAndDataInicioBetweenOrderByDataInicioAsc(Long profissionalId, LocalDateTime inicioDia, LocalDateTime fimDia);
     List<Agendamento> findByDataInicioBetweenOrderByDataInicioAsc(LocalDateTime inicio, LocalDateTime fim);
+    List<Agendamento> findByDataInicioAfterOrderByDataInicioAsc(LocalDateTime data);
+    List<Agendamento> findByProfissionalIdAndDataInicioAfterOrderByDataInicioAsc(Long id, LocalDateTime data);
 
     @Query("SELECT COUNT(a) > 0 FROM Agendamento a " +
            "WHERE a.profissional.id = :profissionalId " +

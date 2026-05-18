@@ -34,14 +34,6 @@ public class AgendamentoService {
     private ServicoRepository servicoRepository;
 
     @Transactional(readOnly = true)
-    public List<Agendamento> listarAgendamentos(String loggedEmail){
-        Usuario loggedUser = usuarioRepository.findByEmail(loggedEmail)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
-
-        return agendamentoRepository.findByClienteIdOrderByDataInicioAsc(loggedUser.getId());
-    }
-
-    @Transactional(readOnly = true)
     public List<Agendamento> listarAgendaProfissional(String email, LocalDate data){
         Usuario userPr = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
@@ -81,45 +73,6 @@ public class AgendamentoService {
         agendamentoRepository.save(agendamento);
     }
 
-    @Transactional
-    public Agendamento criarAgendamento(AgendamentoRequestDTO dto, String loggedEmail){
-        Usuario loggedUser = usuarioRepository.findByEmail(loggedEmail)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
-
-        Usuario scheduledUser;
-        if (dto.getClienteId() != null)
-            scheduledUser = usuarioRepository.findById(dto.getClienteId())
-                    .orElseThrow(() -> new RuntimeException("Usuário informado não foi encontrado."));
-        else
-            scheduledUser = loggedUser;
-
-        if ("ROLE_CLIENTE".equals(loggedUser.getRole()))
-            if (!loggedUser.getId().equals(scheduledUser.getId()))
-                throw new RuntimeException("Você não tem permissão para agendar para outros clientes.");
-
-        Servico servico = servicoRepository.findById(dto.getServicoId())
-                .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
-
-        Profissional profissional = profissionalRepository.findById(dto.getProfissionalId())
-                .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
-
-        LocalDateTime dataInicio = dto.getDataInicio();
-        LocalDateTime dataFim = dataInicio.plusMinutes(servico.getDuracaoMin());
-
-        if (agendamentoRepository.existeConflito(profissional.getId(), dataInicio, dataFim))
-            throw new RuntimeException("Já existe um agendamento para este profissional neste horário.");
-
-        Agendamento newSchedule = new Agendamento();
-        newSchedule.setCliente(scheduledUser);
-        newSchedule.setProfissional(profissional);
-        newSchedule.setServico(servico);
-        newSchedule.setStatus("PENDENTE");
-        newSchedule.setDataInicio(dataInicio);
-        newSchedule.setDataFim(dataFim);
-
-        return agendamentoRepository.save(newSchedule);
-    }
-
     @Transactional(readOnly = true)
     public List<Agendamento> listAllMyAgendamentos(String loggedEmail){
         Usuario loggedUser = usuarioRepository.findByEmail(loggedEmail)
@@ -128,7 +81,7 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public void cancelarAgendamento(Long id, String loggedEmail){
+    public void cancelarAgendamentoCliente(Long id, String loggedEmail){
         Agendamento agendamento = agendamentoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
 
@@ -155,5 +108,126 @@ public class AgendamentoService {
         agendamentoRepository.save(agendamento);
     }
 
+    public List<String> consultarHorarios(LocalDate data, Long profissionalId, Integer duracao){
+        LocalTime abertura = LocalTime.of(8, 0);
+        LocalTime fechamento = LocalTime.of(20, 0);
 
+        LocalDateTime inicioDia = data.atStartOfDay();
+        LocalDateTime fimDia = data.atTime(23, 59, 59);
+        List<Agendamento> agendamentosMarcados =
+                agendamentoRepository.findByProfissionalIdAndDataInicioBetweenOrderByDataInicioAsc(profissionalId, inicioDia, fimDia);
+
+        List<String> horariosLivres = new ArrayList<>();
+        LocalTime horarioAnalise = abertura;
+
+        while(horarioAnalise.plusMinutes(duracao).isBefore(fechamento.plusMinutes(1))){
+            LocalDateTime inicioTentativa = data.atTime(horarioAnalise);
+            LocalDateTime fimTentativa = inicioTentativa.plusMinutes(duracao);
+
+            if (data.equals(LocalDate.now()) && inicioTentativa.isBefore(LocalDateTime.now())){
+                horarioAnalise = horarioAnalise.plusMinutes(15);
+                continue;
+            }
+
+            boolean conflito = false;
+            for (Agendamento existente : agendamentosMarcados){
+                if ("CANCELADO".equalsIgnoreCase(existente.getStatus())) continue;
+
+                LocalDateTime inicioExistente = existente.getDataInicio();
+                LocalDateTime fimExistente = inicioExistente.plusMinutes(existente.getServico().getDuracaoMin());
+
+                if (inicioTentativa.isBefore(fimExistente) && fimTentativa.isAfter(inicioExistente)){
+                    conflito = true;
+                    break;
+                }
+            }
+
+            if (!conflito)
+                horariosLivres.add(horarioAnalise.toString());
+
+            horarioAnalise = horarioAnalise.plusMinutes(15);
+        }
+
+        return horariosLivres;
+    }
+
+    public List<Agendamento> buscarTodosAgendamentos(String loggedMail){
+        Usuario usuario = usuarioRepository.findByEmail(loggedMail)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        if ("ROLE_ADMIN".equals(usuario.getRole()))
+            return agendamentoRepository.findByDataInicioAfterOrderByDataInicioAsc(LocalDateTime.now().with(LocalTime.MIN));
+
+        if("ROLE_PROFESSIONAL".equals(usuario.getRole()))
+            return agendamentoRepository.findByProfissionalIdAndDataInicioAfterOrderByDataInicioAsc(usuario.getId(), LocalDateTime.now().with(LocalTime.MIN));
+
+        throw new RuntimeException("Acesso negado. Você não tem permissão para executar esta ação.");
+    }
+
+    @Transactional
+    public Agendamento criarAgendamento(AgendamentoRequestDTO dto, String loggedEmail){
+        Usuario loggedUser = usuarioRepository.findByEmail(loggedEmail)
+                .orElseThrow(() -> new RuntimeException("Sessão Inválida."));
+
+        Usuario scheduledUser;
+        if (dto.getClienteId() != null)
+            scheduledUser = usuarioRepository.findById(dto.getClienteId())
+                    .orElseThrow(() -> new RuntimeException("Usuário informado não foi encontrado."));
+        else
+            scheduledUser = loggedUser;
+
+        if ("ROLE_CLIENTE".equals(loggedUser.getRole()))
+            if (!loggedUser.getId().equals(scheduledUser.getId()))
+                throw new RuntimeException("Você não tem permissão para agendar para outros clientes.");
+
+        Servico servico = servicoRepository.findById(dto.getServicoId())
+                .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
+
+        Profissional profissional = profissionalRepository.findById(dto.getProfissionalId())
+                .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
+
+        LocalDateTime dataInicio = dto.getDataInicio();
+        LocalDateTime dataFim = dataInicio.plusMinutes(servico.getDuracaoMin());
+
+
+        Agendamento newSchedule = new Agendamento();
+        newSchedule.setCliente(scheduledUser);
+        newSchedule.setProfissional(profissional);
+        newSchedule.setServico(servico);
+        newSchedule.setStatus("PENDENTE");
+        newSchedule.setDataInicio(dataInicio);
+        newSchedule.setDataFim(dataFim);
+
+        return agendamentoRepository.save(newSchedule);
+    }
+
+    private void validarRegrasAgendamento(Long professionalId, LocalDateTime dataInicio, LocalDateTime dataFim){
+        if (dataInicio.isAfter(LocalDateTime.now().plusYears(1)))
+            throw new RuntimeException("Não é permitido fazer agendamentos com mais de 1 ano de antecedência.");
+
+        if (agendamentoRepository.existeConflito(professionalId, dataInicio, dataFim))
+            throw new RuntimeException("Já existe um agendamento para este profissional neste horário.");
+    }
+
+    private void definirCliente(Agendamento agendamento, AgendamentoRequestDTO dto, Usuario loggedUser){
+        if ("ROLE_CLIENTE".equals(loggedUser.getRole())){
+            if (dto.getClienteId() != null && !loggedUser.getId().equals(dto.getClienteId()))
+                throw new RuntimeException("Você não tem permissão para agendar para outros clientes.");
+
+            agendamento.setCliente(loggedUser);
+        } else {
+            if (dto.getClienteId() != null){
+                Usuario clienteCadastrado = usuarioRepository.findById(dto.getClienteId())
+                        .orElseThrow(() -> new RuntimeException("Usuário informado não foi encontrado."));
+                agendamento.setCliente(clienteCadastrado);
+            } else if (dto.getNomeClienteAvulso() != null && !dto.getNomeClienteAvulso().trim().isEmpty()) {
+                agendamento.setCliente(null);
+                agendamento.setNomeClienteAvulso(dto.getNomeClienteAvulso());
+                agendamento.setTelefoneClienteAvulso(dto.getTelefoneClienteAvulso());
+            } else {
+                agendamento.setCliente(loggedUser);
+            }
+        }
+
+    }
 }
