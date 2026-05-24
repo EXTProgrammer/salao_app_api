@@ -26,7 +26,8 @@ public class AgendamentoController {
 
     @PostMapping
     public ResponseEntity<Agendamento> criarAgendamento(@Valid @RequestBody AgendamentoRequestDTO dto, Authentication authentication){
-        return ResponseEntity.status(HttpStatus.CREATED).body(agendamentoService.criarAgendamento(dto, authentication.getName()));
+        Agendamento salvo = agendamentoService.criarAgendamento(dto, authentication.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
     @GetMapping("/meus")

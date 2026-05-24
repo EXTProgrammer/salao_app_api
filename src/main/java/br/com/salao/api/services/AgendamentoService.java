@@ -169,17 +169,6 @@ public class AgendamentoService {
         Usuario loggedUser = usuarioRepository.findByEmail(loggedEmail)
                 .orElseThrow(() -> new RuntimeException("Sessão Inválida."));
 
-        Usuario scheduledUser;
-        if (dto.getClienteId() != null)
-            scheduledUser = usuarioRepository.findById(dto.getClienteId())
-                    .orElseThrow(() -> new RuntimeException("Usuário informado não foi encontrado."));
-        else
-            scheduledUser = loggedUser;
-
-        if ("ROLE_CLIENTE".equals(loggedUser.getRole()))
-            if (!loggedUser.getId().equals(scheduledUser.getId()))
-                throw new RuntimeException("Você não tem permissão para agendar para outros clientes.");
-
         Servico servico = servicoRepository.findById(dto.getServicoId())
                 .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
 
@@ -188,15 +177,15 @@ public class AgendamentoService {
 
         LocalDateTime dataInicio = dto.getDataInicio();
         LocalDateTime dataFim = dataInicio.plusMinutes(servico.getDuracaoMin());
-
+        validarRegrasAgendamento(dto.getProfissionalId(), dto.getDataInicio(), dataFim);
 
         Agendamento newSchedule = new Agendamento();
-        newSchedule.setCliente(scheduledUser);
+        newSchedule.setStatus("PENDENTE");
         newSchedule.setProfissional(profissional);
         newSchedule.setServico(servico);
-        newSchedule.setStatus("PENDENTE");
         newSchedule.setDataInicio(dataInicio);
         newSchedule.setDataFim(dataFim);
+        definirCliente(newSchedule, dto, loggedUser);
 
         return agendamentoRepository.save(newSchedule);
     }
