@@ -39,6 +39,12 @@ public class Agendamento {
     @Column(name = "telefone_cliente_avulso")
     private String telefoneClienteAvulso;
 
+    @Column(name = "nota_avaliacao")
+    private Integer notaAvaliacao;
+
+    @Column(name = "comentario_avaliacao")
+    private String comentarioAvaliacao;
+
     //Métodos
     public Agendamento(){}
 
@@ -128,5 +134,21 @@ public class Agendamento {
 
     public String getTelefoneClienteAvulso(){
         return this.telefoneClienteAvulso;
+    }
+
+    public void setNotaAvaliacao(Integer notaAvaliacao){
+        this.notaAvaliacao = notaAvaliacao;
+    }
+
+    public Integer getNotaAvaliacao(){
+        return this.notaAvaliacao;
+    }
+
+    public void setComentarioAvaliacao(String comentarioAvaliacao){
+        this.comentarioAvaliacao = comentarioAvaliacao;
+    }
+
+    public String getComentarioAvaliacao(){
+        return this.comentarioAvaliacao;
     }
 }

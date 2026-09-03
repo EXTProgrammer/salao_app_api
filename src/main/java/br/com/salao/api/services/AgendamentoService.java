@@ -1,5 +1,6 @@
 package br.com.salao.api.services;
 import br.com.salao.api.dto.AgendamentoRequestDTO;
+import br.com.salao.api.dto.AvaliacaoDTO;
 import br.com.salao.api.models.Agendamento;
 import br.com.salao.api.models.Profissional;
 import br.com.salao.api.models.Servico;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -103,6 +105,19 @@ public class AgendamentoService {
 
         if ("CANCELADO".equalsIgnoreCase(agendamento.getStatus()) || "CONCLUIDO".equalsIgnoreCase(agendamento.getStatus()))
             throw new RuntimeException("Este agendamento já foi encerrado.");
+
+        if(isCliente){
+            LocalDateTime agora = LocalDateTime.now();
+            LocalDateTime horaAtendimento = agendamento.getDataInicio();
+
+            if (agora.isAfter(horaAtendimento))
+                throw new RuntimeException("Este agendamento já passou e não pode ser cancelado.");
+
+            long horasAteAtendimento = ChronoUnit.HOURS.between(agora, horaAtendimento);
+            if (horasAteAtendimento < 2){
+                throw new RuntimeException("Não é possível cancelar com menos de 2 horas de antecedência. Por favor, ligue para nosso número.");
+            }
+        }
 
         agendamento.setStatus("CANCELADO");
         agendamentoRepository.save(agendamento);
@@ -218,5 +233,23 @@ public class AgendamentoService {
             }
         }
 
+    }
+
+    public void avaliarAtendimento(Long id, AvaliacaoDTO dto, String loggedUser){
+        Agendamento agendamento = agendamentoRepository.findById(id)
+                .orElseThrow(()-> new RuntimeException("Agendamento não encontrado."));
+
+        if (agendamento.getCliente() == null || !agendamento.getCliente().getEmail().equals(loggedUser))
+            throw new RuntimeException("Você não tem permissão para avaliar este agendamento.");
+
+        if (!"CONCLUIDO".equalsIgnoreCase(agendamento.getStatus()))
+            throw new RuntimeException("Apenas agendamentos concluídos podem ser avaliados.");
+
+        if (agendamento.getNotaAvaliacao() != null)
+            throw new RuntimeException("Você já avaliou este atendimento.");
+
+        agendamento.setNotaAvaliacao(dto.getNota());
+        agendamento.setComentarioAvaliacao(dto.getComentario());
+        agendamentoRepository.save(agendamento);
     }
 }

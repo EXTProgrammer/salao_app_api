@@ -30,6 +30,13 @@ public class DataInitializer implements CommandLineRunner {
 
     @Value("${app.admin.initial-password:ADMIN_PASS}")
     private String adminPassword;
+
+    @Value("${app.cliente.initial-password}:CLIENTE_PASS")
+    private String clientePassword;
+
+    @Value("${app.profissional.initial-password}:PROF_PASS")
+    private String profPassword;
+
     @Autowired
     private ProfissionalRepository profissionalRepository;
 
@@ -43,18 +50,16 @@ public class DataInitializer implements CommandLineRunner {
             admin.setRole("ROLE_ADMIN");
             admin.setTelefone("999999999");
             usuarioRepository.save(admin);
-            System.out.println(">>> Admin criado: admin@salao.com / admin123");
         }
 
         if (usuarioRepository.findByEmail("clienteteste@salao.com").isEmpty()){
             Usuario cliente = new Usuario();
             cliente.setNome("Paciente 0");
             cliente.setEmail("clienteteste@salao.com");
-            cliente.setSenha(passwordEncoder.encode("cliente456"));
+            cliente.setSenha(passwordEncoder.encode(clientePassword));
             cliente.setRole("ROLE_CLIENTE");
             cliente.setTelefone("888888888");
             usuarioRepository.save(cliente);
-            System.out.println(">>> cliente criado: clienteteste@salao.com / cliente456");
         }
 
         if (servicoRepository.count() == 0){
@@ -72,7 +77,7 @@ public class DataInitializer implements CommandLineRunner {
             Usuario prof = new Usuario();
             prof.setNome("Zohan, o Agente Bom de Corte");
             prof.setEmail("zohan@salao.com");
-            prof.setSenha("Zohan123");
+            prof.setSenha(passwordEncoder.encode(profPassword));
             prof.setRole("ROLE_PROFISSIONAL");
             prof.setTelefone("4977777777777");
             prof = usuarioRepository.save(prof);

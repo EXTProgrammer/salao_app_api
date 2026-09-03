@@ -1,5 +1,6 @@
 package br.com.salao.api.controllers;
 import br.com.salao.api.dto.AgendamentoRequestDTO;
+import br.com.salao.api.dto.AvaliacaoDTO;
 import br.com.salao.api.models.Agendamento;
 import br.com.salao.api.repositories.AgendamentoRepository;
 import br.com.salao.api.services.AgendamentoService;
@@ -79,6 +80,7 @@ public class AgendamentoController {
     }
 
     @PutMapping("/{id}/cliente-cancelar")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> cancelarCliente(@PathVariable Long id, Authentication auth){
         agendamentoService.cancelarAgendamentoCliente(id, auth.getName());
         return ResponseEntity.ok().build();
@@ -99,6 +101,13 @@ public class AgendamentoController {
 
         List<Agendamento> todosAgendamentos = agendamentoService.buscarTodosAgendamentos(loggedMail);
         return ResponseEntity.ok(todosAgendamentos);
+    }
+
+    @PutMapping("/{id}/avaliar")
+    @PreAuthorize("hasAnyRole('ROLE_CLIENTE')")
+    public ResponseEntity<Void> avaliarAtendimento(@PathVariable Long id, @Valid @RequestBody AvaliacaoDTO dto, Authentication auth){
+        agendamentoService.avaliarAtendimento(id, dto, auth.getName());
+        return ResponseEntity.ok().build();
     }
 
 }

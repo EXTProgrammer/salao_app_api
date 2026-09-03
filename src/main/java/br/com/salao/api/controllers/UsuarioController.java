@@ -58,6 +58,12 @@ public class UsuarioController {
         return ResponseEntity.ok(resultados);
     }
 
+    @GetMapping("/eu")
+    public ResponseEntity<Usuario> meuPerfil(Authentication auth){
+        Usuario usuario = usuarioRepository.findByEmail(auth.getName()).get();
+        return ResponseEntity.ok(usuario);
+    }
+
     @GetMapping("/buscar-por-email")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Usuario> buscarPorEmail(@RequestParam String email){
