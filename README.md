@@ -1,4 +1,4 @@
-# 💇‍♂️ API - Sistema de Agendamento para Salões
+# API - Sistema de Agendamento para Salões
 
 ![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow)
 ![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)
