@@ -45,3 +45,5 @@ Esta é uma API RESTful desenvolvida para gerenciar o backend de um sistema de a
 - [ ] Implementação de CI/CD via GitHub Actions
 - [ ] Documentação da API com Swagger/OpenAPI
 - [ ] Testes de Integração
+
+Desenvolvido por Eduardo Xaubet Tarigo
